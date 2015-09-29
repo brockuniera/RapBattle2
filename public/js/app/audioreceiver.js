@@ -18,7 +18,7 @@ define(function (require) {
     socket.connect();
 
     var requestData = function(num, callback){
-        socket.emit('request', {file: num});
+        socket.emit('request', {num: num + 1});
         savedCallback = callback;
     };
 

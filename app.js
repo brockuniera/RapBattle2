@@ -83,15 +83,26 @@ var server = http.createServer(app);
 
 var fs = require('fs');
 var io = require('socket.io')(server);
-var mp3data = fs.readFileSync(__dirname + '/public/songs/a.mp3');
 var counter = 0;
 io.on('connection', function(socket){
 
     console.log('got connection');
-    socket.on('request', function(data){
-        console.log(counter++);
-        // Ignore data for now, just keep giving them the file
-        socket.emit('raw', mp3data);
+    socket.on('request', function(inObj){
+        var num = parseInt(inObj.num, 10);
+        if(Number.isNaN(num)){
+            console.log(inObj);
+            console.log(num);
+            return;
+        }
+
+        fs.readFile(__dirname + '/public/songs/' + num + '.mp3', function(err, file){
+            if(err){
+                console.log(err);
+                return;
+            }
+            console.log(counter++);
+            socket.emit('raw', file);
+        });
     });
 });
 
