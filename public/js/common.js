@@ -9,6 +9,7 @@ requirejs.config({
     baseUrl: "js/lib",
     paths: {
       app: "../app",
-      jquery: "//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min"
+      jquery: "//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min",
+      socketio: "//cdn.socket.io/socket.io-1.3.5"
     }
 });

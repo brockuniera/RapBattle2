@@ -1,13 +1,43 @@
 define(function (require) {
     var $ = require('jquery');
 
+    //
+    // Socket io
+    //
+
+    var io = require('socketio');
+
+    // Create socket
+    var url = 'http://localhost:8000';
+    var socket = io.connect(url);
+
+    socket.on('connect', function(){
+        console.log('Socket.io socket connected.');
+    });
+
+    socket.connect();
+
+    var requestData = function(num, callback){
+        socket.emit('request', {file: num});
+        savedCallback = callback;
+    };
+
+    // For every data thing we get, save it to a variable and fire an event.
+    var savedCallback = null;
+    socket.on('raw', function (data) {
+        savedCallback(data);
+    });
+
+    //
+    // XHR Get
+    //
 
     // Cache XHRs to avoid repeated requests.
     var xhrCache = {};
 
     // Simple XHR based file loader.  Requests |url| as an ArrayBuffer and delivers
     // it to |callback| once the request completes successfully.
-    function GET(url, callback) {
+    var XHR_GET = function(url, callback) {
         if (url in xhrCache) {
             if (xhrCache[url] === 'pending') {
                 setTimeout(function() {
@@ -34,7 +64,10 @@ define(function (require) {
             }
         };
         xhr.send();
-    }
+    };
+
+    //var GET = SOCKETIO_GET;
+    var GET = XHR_GET;
 
     // 
     // Our code
@@ -43,29 +76,33 @@ define(function (require) {
     var audio = document.querySelector('audio');
     var mediaSource = new MediaSource();
 
-    var segments = 2;
+    var segments = 6;
     var names = ['songs/a.mp3', 'songs/b.mp3'];
 
     mediaSource.addEventListener('sourceopen', function(){
         // Do this on open
+        console.log('addSourceBuffer()')
         var sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
 
+        // Callback subject of GET
         function onAudioLoaded(data, index){
-            console.log(index);
-
             // When appendBuffer() completes it will fire an "updateend" event signaling
             // that it's okay to append another segment of media. Here we'll chain the
             // append for the next segment to the completion of our current append.
             if (index === 0) {
+                // Auto start audio
+                audio.play();
+
                 sourceBuffer.addEventListener('updateend', function() {
                     if (++index < segments) {
-                        GET(names[index], function(data) {
-                            console.log('Loading ' + name[index]);
+                        requestData(index, function(data) {
+                            console.log('Loading ' + index);
                             onAudioLoaded(data, index);
                         });
                     } else {
                         // We've loaded all available segments, so tell MediaSource there are
                         // no more buffers which will be appended.
+                        console.log('endOfStream()');
                         mediaSource.endOfStream();
                     }
                 });
@@ -77,7 +114,8 @@ define(function (require) {
         }
 
         // Finally, grab our data
-        GET(names[0], function(data){
+        console.log('starting...');
+        requestData(0, function(data){
             onAudioLoaded(data, 0);
         });
     }, false);
